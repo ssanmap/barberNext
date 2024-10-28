@@ -1,4 +1,5 @@
 // src/interfaces/Service.ts
+import { DateTime } from 'luxon';
 export interface Service {
     _id: string;
     name: string;
@@ -19,7 +20,8 @@ export interface Service {
     clientId: string;
     serviceId: string;
     professionalId: string;
-    date: string;
+    date: Date | string;
+    duration: number;
     status: string;
   }
   

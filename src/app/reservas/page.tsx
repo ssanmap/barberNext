@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Appointment , Professional, Service} from "../../interfaces/Appointment";
-
+import { Appointment, Professional, Service } from "../../interfaces/Appointment";
+import { DateTime } from 'luxon';
 
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -12,6 +12,8 @@ export default function AppointmentsPage() {
   const [serviceId, setServiceId] = useState("");
   const [professionalId, setProfessionalId] = useState("");
   const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [editingId, setEditingId] = useState("");
 
   const fetchAppointments = async () => {
@@ -39,12 +41,44 @@ export default function AppointmentsPage() {
     fetchProfessionals();
   }, []);
 
-  const handleCreateOrUpdate = async () => {
-    const appointmentData: Partial<Appointment> = { clientId, serviceId, professionalId, date, status: "pending" };
+  useEffect(() => {
+    const fetchAvailableTimes = async () => {
+      if (date && professionalId) {
+        const response = await fetch(`/api/appointments/available?professionalId=${professionalId}&date=${date}`);
+        const data = await response.json();
+        console.log("Available Times:", data); // Log para verificar
+        setAvailableTimes(data); // Asegúrate de que esto se esté estableciendo correctamente
+      }
+    };
 
-    const endpoint = editingId
-      ? `/api/appointments/update/${editingId}`
-      : "/api/appointments/create";
+    fetchAvailableTimes();
+  }, [date, professionalId]);
+
+  const handleCreateOrUpdate = async () => {
+    const service = services.find(s => s._id === serviceId);
+    const duration = service ? service.duration : 0;
+       // Combina la fecha y la hora
+       const dateTimeString = `${date}T${time}`;
+    
+       // Log para verificar el valor antes de convertir
+       console.log("dateTimeString:", dateTimeString);
+       
+       // Verifica si la fecha y la hora son válidas
+       if (!date || !time) {
+           console.error("La fecha o la hora son inválidas");
+           return;
+       }
+   
+    const dateToSave = DateTime.fromISO(dateTimeString, { zone: 'local' }).toJSDate();
+  
+    // Asegúrate de que dateToSave sea válido
+    if (isNaN(dateToSave.getTime())) {
+      console.error("La fecha generada es inválida:", dateToSave);
+      return; // No continúes si la fecha es inválida
+    }
+    const appointmentData: Partial<Appointment> = { clientId, serviceId, professionalId,     date: dateTimeString,  status: "pending", duration };
+
+    const endpoint = editingId ? `/api/appointments/update/${editingId}` : "/api/appointments/create";
     const method = editingId ? "PUT" : "POST";
 
     await fetch(endpoint, {
@@ -58,6 +92,7 @@ export default function AppointmentsPage() {
     setServiceId("");
     setProfessionalId("");
     setDate("");
+    setTime("");
     setEditingId("");
   };
 
@@ -65,7 +100,8 @@ export default function AppointmentsPage() {
     setClientId(appointment.clientId);
     setServiceId(appointment.serviceId);
     setProfessionalId(appointment.professionalId);
-    setDate(appointment.date);
+    setDate(new Date(appointment.date).toISOString().split("T")[0]);
+    setTime(new Date(appointment.date).toISOString().split("T")[1].slice(0, 5));
     setEditingId(appointment._id);
   };
 
@@ -79,9 +115,7 @@ export default function AppointmentsPage() {
       <h1 className="text-3xl font-bold mb-8">Gestión de Citas</h1>
 
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 className="text-2xl font-semibold mb-4">
-          {editingId ? "Editar Cita" : "Crear Cita"}
-        </h2>
+        <h2 className="text-2xl font-semibold mb-4">{editingId ? "Editar Cita" : "Crear Cita"}</h2>
         <input
           className="border p-2 rounded mb-4 w-full"
           placeholder="Nombre del Cliente"
@@ -113,11 +147,23 @@ export default function AppointmentsPage() {
           ))}
         </select>
         <input
-          type="datetime-local"
+          type="date"
           className="border p-2 rounded mb-4 w-full"
           value={date}
           onChange={(e) => setDate(e.target.value)}
         />
+        <select
+          className="border p-2 rounded mb-4 w-full"
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+        >
+          <option value="">Selecciona un horario</option>
+          {availableTimes.map((availableTime) => (
+            <option key={availableTime} value={availableTime}>
+              {availableTime}
+            </option>
+          ))}
+        </select>
         <button className="bg-blue-500 text-white px-4 py-2 rounded mr-2" onClick={handleCreateOrUpdate}>
           {editingId ? "Guardar Cambios" : "Crear"}
         </button>

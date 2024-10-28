@@ -12,4 +12,5 @@ const ServiceSchema: Schema = new Schema({
   price: { type: Number, required: true },
 });
 
-export default mongoose.model<IService>('Service', ServiceSchema);
+const Service = mongoose.models.Service || mongoose.model<IService>('Service', ServiceSchema);
+export default Service;

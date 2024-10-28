@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import connectDB from '../../../src/infrastructure/database';
 import Schedule from '../../../src/domain/models/Schedule';
+import { DateTime } from 'luxon';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   await connectDB();
@@ -10,7 +11,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { professionalId, dayOfWeek, startTime, endTime } = req.body;
 
       // Log para revisar los datos que llegan en la solicitud
-      console.log("Datos recibidos:", { professionalId, dayOfWeek, startTime, endTime });
+      const startDateTime = DateTime.fromFormat(startTime, 'HH:mm', { zone: 'local' }).toJSDate();
+      const endDateTime = DateTime.fromFormat(endTime, 'HH:mm', { zone: 'local' }).toJSDate();
+
+      // Log para verificar que las fechas se hayan convertido correctamente
+      console.log("startDateTime:", startDateTime);
+      console.log("endDateTime:", endDateTime);
+      
 
       const newSchedule = new Schedule({ professionalId, dayOfWeek, startTime, endTime });
       const savedSchedule = await newSchedule.save();

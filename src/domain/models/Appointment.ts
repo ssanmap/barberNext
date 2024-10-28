@@ -5,6 +5,7 @@ export interface IAppointment extends Document {
   serviceId: string;
   professionalId: string;
   date: Date;
+  duration: number; 
   status: 'pending' | 'confirmed' | 'completed';
 }
 
@@ -13,6 +14,7 @@ const AppointmentSchema: Schema = new Schema({
   serviceId: { type: Schema.Types.ObjectId, ref: 'Service', required: true },
   professionalId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   date: { type: Date, required: true },
+  duration: { type: Number, required: true }, 
   status: { type: String, required: true, enum: ['pending', 'confirmed', 'completed'] },
 });
 
